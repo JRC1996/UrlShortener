@@ -14,7 +14,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<UrlshortenerContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddScoped<IUrlShortenerServices, UrlShortenerService>();
+builder.Services.AddScoped<IUrlShortenerServices,UrlShortenerService>();
 
 var app = builder.Build();
 
@@ -25,18 +25,37 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-//Fix
+
+
 app.MapPost("api/shorten", async (Url request,
     UrlShortenerService urlShortenerService,
-    UrlshortenerContext dbContext) => {
+    UrlshortenerContext dbContext,
+    HttpContext httpContext) => {
 
     if (!Uri.TryCreate(request.Url1, UriKind.Absolute, out _)) 
     {
         return Results.BadRequest("Invalid Url");
     
-    }     
+    }
 
+    var code = await urlShortenerService.UniqueCodeGenerator();
+        var shortUrl = new Url
+        {
+            Id = request.Id,
+            Url1 = request.Url1,
+            Code = code,
+            Shorturl = $"{httpContext.Request.Scheme}://{httpContext.Request.Host}/api/{code}",
+            Creationdate = DateTime.Now
+
+        };
+
+        dbContext.Urls.Add(shortUrl);
+        await dbContext.SaveChangesAsync();
+
+        return Results.Ok(shortUrl.Shorturl);
 });
+
+//app.MapGet(){ }
 
 
 app.UseHttpsRedirection();

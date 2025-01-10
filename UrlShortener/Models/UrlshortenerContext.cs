@@ -17,7 +17,7 @@ public partial class UrlshortenerContext : DbContext
 
     public virtual DbSet<Url> Urls { get; set; }
 
-  
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Url>(entity =>

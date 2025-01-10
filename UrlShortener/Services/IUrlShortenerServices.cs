@@ -2,6 +2,6 @@
 {
     public interface IUrlShortenerServices
     {
-        Task<string> UniqueCodeGenerator();
+        Task <string> UniqueCodeGenerator();
     }
 }

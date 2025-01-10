@@ -13,5 +13,5 @@ public partial class Url
 
     public string Code { get; set; } = null!;
 
-    public DateOnly? Creationdate { get; set; }
+    public DateTime? Creationdate { get; set; }
 }

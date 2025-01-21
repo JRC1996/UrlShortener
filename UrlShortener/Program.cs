@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using UrlShortener.Models;
 using UrlShortener.Services;
 
@@ -14,7 +15,9 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<UrlshortenerContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddScoped<IUrlShortenerServices,UrlShortenerService>();
+builder.Services.AddMemoryCache();
+
+builder.Services.AddScoped<IUrlShortenerServices, UrlShortenerService>();
 
 var app = builder.Build();
 
@@ -28,7 +31,7 @@ if (app.Environment.IsDevelopment())
 
 
 app.MapPost("api/shorten", async (Url request,
-    UrlShortenerService urlShortenerService,
+    IUrlShortenerServices urlShortenerService,
     UrlshortenerContext dbContext,
     HttpContext httpContext) => {
 
@@ -55,7 +58,29 @@ app.MapPost("api/shorten", async (Url request,
         return Results.Ok(shortUrl.Shorturl);
 });
 
-//app.MapGet(){ }
+app.MapGet("api/{code}", async (string code,UrlshortenerContext dbContext, IMemoryCache memoryCache) =>{
+
+    if (!memoryCache.TryGetValue(code, out  Url shortenUrl)) 
+    {
+
+        shortenUrl = await dbContext.Urls.FirstOrDefaultAsync(s => s.Code == code);
+
+        if (shortenUrl is null)
+        {
+
+            return Results.NotFound();
+        }
+
+        memoryCache.Set(code, shortenUrl, new MemoryCacheEntryOptions 
+        { 
+        
+            SlidingExpiration = TimeSpan.FromMinutes(15)
+        });
+    }
+    
+
+    return Results.Redirect(shortenUrl.Url1);
+});
 
 
 app.UseHttpsRedirection();
